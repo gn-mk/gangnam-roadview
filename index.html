@@ -1,0 +1,2066 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>운전면허시험장 길찾기</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum/build/pannellum.css">
+  <script src="https://cdn.jsdelivr.net/npm/pannellum/build/pannellum.js"></script>
+
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background: #e5e7eb;
+    }
+
+    #menuScreen {
+      width: 100vw;
+      height: 100vh;
+      background: #e5e7eb;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding-top: 35px;
+      box-sizing: border-box;
+    }
+
+    #menuScreen h1 {
+      color: #0b1f4d;
+      font-size: 33px;
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    .menu-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      justify-content: center;
+      align-items: center;
+      padding: 0 20px;
+    }
+
+    .menu-btn {
+      width: 320px;
+      height: 74px;
+      background: white;
+      border: 3px solid black;
+      border-radius: 18px;
+      font-size: 23px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .ci-logo {
+      width: 230px;
+      margin-top: 22px;
+    }
+
+    #viewerScreen {
+      display: none;
+      width: 100vw;
+      height: 100vh;
+      background: black;
+      position: relative;
+    }
+
+    #panorama {
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .custom-hotspot {
+      width: 90px;
+      height: 90px;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      cursor: pointer;
+    }
+
+    .arrow-front {
+      background-image: url('arrow-front.png?v=1001');
+    }
+
+    .online-arrow {
+      background-image: url('online-arrow.png?v=1001');
+    }
+
+    .safety-arrow {
+      background-image: url('safety-arrow.png?v=1001');
+    }
+
+    .booktest-arrow {
+      background-image: url('booktest-arrow.png?v=1001');
+    }
+
+    .courseedu-arrow {
+      background-image: url('courseedu-arrow.png?v=1001');
+    }
+
+    .drivingedu-arrow {
+      background-image: url('drivingedu-arrow.png?v=1001');
+    }
+
+    .home-btn {
+      position: fixed;
+      top: 14px;
+      left: 14px;
+      z-index: 9999;
+      padding: 12px 20px;
+      background: white;
+      border: 2px solid black;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .back-btn {
+      position: fixed;
+      bottom: 14px;
+      left: 14px;
+      z-index: 9999;
+      padding: 12px 20px;
+      background: white;
+      border: 2px solid black;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+
+.guide-toast {
+  position: fixed;
+  top: 23%;
+  left: 50%;
+  transform: translateX(-50%);
+
+  z-index: 10000;
+
+  background: rgba(30, 30, 30, 0.9);
+  color: white;
+
+  padding: 14px 28px;
+
+  border-radius: 14px;
+
+  font-size: 23px;
+  font-weight: bold;
+
+  text-align: center;
+  line-height: 1.6;
+
+  display: none;
+
+  width: 420px;
+  max-width: 85%;
+}
+
+.guide-title {
+  font-size: 22px;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+
+.guide-desc {
+  font-size: 15px;
+  font-weight: normal;
+}
+  </style>
+</head>
+
+<body>
+
+<div id="menuScreen">
+  <h1>
+    강남운전면허시험장<br>
+    길찾기 로드뷰
+  </h1>
+
+  <div class="menu-buttons">
+    <button class="menu-btn" onclick="openRoute('online1')">온라인 운전면허증 수령 창구</button>
+    <button class="menu-btn" onclick="openRoute('safety1')">응시전 교통안전교육 창구</button>
+    <button class="menu-btn" onclick="openRoute('booktest1')">온라인 시험 예약 창구</button>
+    <button class="menu-btn" onclick="openRoute('courseedu1')">기능교양장</button>
+    <button class="menu-btn" onclick="openRoute('drivingedu1')">도로주행교양장</button>
+  </div>
+
+  <img class="ci-logo" src="ci.png">
+</div>
+
+<div id="viewerScreen">
+  <button class="home-btn" onclick="goHome()">홈</button>
+  <button class="back-btn" onclick="goBack()">이전</button>
+<div id="guideToast" class="guide-toast">
+  <div class="guide-title">
+    화살표를 눌러 이동하세요
+  </div>
+
+  <div class="guide-desc">
+    화면을 드래그하면 주변을 둘러볼 수 있습니다.
+  </div>
+</div>
+
+  <div id="panorama"></div>
+</div>
+
+<script>
+var sceneHistory = [];
+
+var viewer = null;
+
+var guideTimer = null;
+
+function showGuideToast() {
+  var toast = document.getElementById('guideToast');
+
+  if (!toast) return;
+
+  toast.style.display = 'block';
+
+  if (guideTimer) {
+    clearTimeout(guideTimer);
+  }
+
+  guideTimer = setTimeout(function() {
+    toast.style.display = 'none';
+    guideTimer = null;
+  }, 3000);
+}
+
+function hideGuideToast() {
+  var toast = document.getElementById('guideToast');
+
+  if (!toast) return;
+
+  toast.style.display = 'none';
+
+  if (guideTimer) {
+    clearTimeout(guideTimer);
+    guideTimer = null;
+  }
+}
+
+
+function openRoute(sceneId) {
+  document.getElementById('menuScreen').style.display = 'none';
+  document.getElementById('viewerScreen').style.display = 'block';
+
+  showGuideToast();
+
+  setTimeout(function() {
+    if (viewer) {
+      viewer.resize();
+      viewer.loadScene(sceneId);
+    }
+  }, 100);
+}
+
+function goHome() {
+  hideGuideToast();
+  sceneHistory = [];
+  document.getElementById('viewerScreen').style.display = 'none';
+  document.getElementById('menuScreen').style.display = 'flex';
+}
+
+function goBack() {
+  hideGuideToast();
+  if (sceneHistory.length > 0 && viewer) {
+    var previousScene = sceneHistory.pop();
+    viewer.loadScene(previousScene);
+  }
+}
+
+viewer = pannellum.viewer('panorama', {
+  default: {
+    firstScene: 'online1',
+    sceneFadeDuration: 1300,
+    autoLoad: true,
+    showZoomCtrl: false,
+    showFullscreenCtrl: false
+  },
+
+  scenes: {
+
+    /* =========================
+       온라인 운전면허증 수령 창구
+    ========================= */
+
+    online1: {
+      type: 'equirectangular',
+      panorama: 'online1.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: -3,
+      hfov: 78,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -25,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -7,
+        yaw: -3,
+        cssClass: 'custom-hotspot online-arrow',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'online2' }
+      }]
+    },
+
+    online2: {
+      type: 'equirectangular',
+      panorama: 'online2.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -25,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -8,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'online3' }
+      }]
+    },
+
+    online3: {
+      type: 'equirectangular',
+      panorama: 'online3.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -15,
+      yaw: 10,
+      hfov: 70,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -40,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -24,
+        yaw: 10,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'online4' }
+      }]
+    },
+
+    online4: {
+      type: 'equirectangular',
+      panorama: 'online4.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 10,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -40,
+      maxPitch: 90,
+      minYaw: -160,
+      maxYaw: 150,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+      pitch: -23,
+      yaw: 10,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'online5' }
+      }]
+    },
+
+    online5: {
+      type: 'equirectangular',
+      panorama: 'online5.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -5,
+      yaw: 0,
+      hfov: 55,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -40,
+      maxPitch: 90,
+      minYaw: -160,
+      maxYaw: 160,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+      pitch: -22,
+      yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'online6' }
+      }]
+    },
+
+    online6: {
+      type: 'equirectangular',
+      panorama: 'online6.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: -3,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -40,
+      maxPitch: 80,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: []
+    },
+
+    /* =========================
+       응시전 교통안전교육 창구
+    ========================= */
+
+    safety1: {
+      type: 'equirectangular',
+      panorama: 'safety1.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: -3,
+      hfov: 78,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -25,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -7,
+        yaw: -3,
+        cssClass: 'custom-hotspot safety-arrow',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'safety2' }
+      }]
+    },
+
+    safety2: {
+      type: 'equirectangular',
+      panorama: 'safety2.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -25,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -8,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'safety3' }
+      }]
+    },
+
+    safety3: {
+      type: 'equirectangular',
+      panorama: 'safety3.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -15,
+      yaw: 10,
+      hfov: 70,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -40,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -24,
+        yaw: 10,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'safety4' }
+      }]
+    },
+
+    safety4: {
+      type: 'equirectangular',
+      panorama: 'safety4.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 10,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -40,
+      maxPitch: 90,
+      minYaw: -160,
+      maxYaw: 150,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -23,
+        yaw: 10,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'safety5' }
+      }]
+    },
+
+    safety5: {
+      type: 'equirectangular',
+      panorama: 'safety5.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -10,
+      yaw: 0,
+      hfov: 50,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -30,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -16,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'safety6' }
+      }]
+    },
+
+    safety6: {
+      type: 'equirectangular',
+      panorama: 'safety6.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -35,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -18,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'safety7' }
+      }]
+    },
+
+    safety7: {
+      type: 'equirectangular',
+      panorama: 'safety7.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -60,
+      yaw: 0,
+      hfov: 70,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -25,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -9,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'safety8' }
+      }]
+    },
+
+    safety8: {
+      type: 'equirectangular',
+      panorama: 'safety8.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -3,
+      yaw: 0,
+      hfov: 80,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -45,
+      maxPitch: 90,
+      minYaw: -150,
+      maxYaw: 150,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -27,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'safety9' }
+      }]
+    },
+
+    safety9: {
+      type: 'equirectangular',
+      panorama: 'safety9.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -6,
+      yaw: -3,
+      hfov: 65,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -40,
+      maxPitch: 90,
+      minYaw: -150,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: []
+    },
+
+    /* =========================
+       온라인 시험 예약 창구
+    ========================= */
+
+    booktest1: {
+      type: 'equirectangular',
+      panorama: 'booktest1.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: -3,
+      hfov: 78,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -25,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -10,
+        yaw: -3,
+        cssClass: 'custom-hotspot booktest-arrow',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'booktest2' }
+      }]
+    },
+
+    booktest2: {
+      type: 'equirectangular',
+      panorama: 'booktest2.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -25,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -10,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'booktest3' }
+      }]
+    },
+
+    booktest3: {
+      type: 'equirectangular',
+      panorama: 'booktest3.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -40,
+      maxPitch: 80,
+      minYaw: -120,
+      maxYaw: 130,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -25,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'booktest4' }
+      }]
+    },
+
+    booktest4: {
+      type: 'equirectangular',
+      panorama: 'booktest4.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -40,
+      maxPitch: 80,
+      minYaw: -160,
+      maxYaw: 160,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -25,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'booktest5' }
+      }]
+    },
+
+    booktest5: {
+      type: 'equirectangular',
+      panorama: 'booktest5.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -40,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 160,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -25,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'booktest6' }
+      }]
+    },
+
+    booktest6: {
+      type: 'equirectangular',
+      panorama: 'booktest6.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 3,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -40,
+      maxPitch: 90,
+      minYaw: -170,
+      maxYaw: 170,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -25,
+        yaw: 3,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'booktest7' }
+      }]
+    },
+
+    booktest7: {
+      type: 'equirectangular',
+      panorama: 'booktest7.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -35,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -20,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'booktest8' }
+      }]
+    },
+
+    booktest8: {
+      type: 'equirectangular',
+      panorama: 'booktest8.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -35,
+      maxPitch: 80,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -20,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'booktest9' }
+      }]
+    },
+
+    booktest9: {
+      type: 'equirectangular',
+      panorama: 'booktest9.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: -2,
+      hfov: 65,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -40,
+      maxPitch: 80,
+      minYaw: -150,
+      maxYaw: 140,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: []
+    },
+
+    /* =========================
+       기능교양장
+    ========================= */
+
+    courseedu1: {
+      type: 'equirectangular',
+      panorama: 'courseedu1.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 10,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -25,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 150,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -1,
+        yaw: 11,
+        cssClass: 'custom-hotspot courseedu-arrow',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu2' }
+      }]
+    },
+
+    courseedu2: {
+      type: 'equirectangular',
+      panorama: 'courseedu2.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -3,
+      yaw: -3,
+      hfov: 100,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -25,
+      maxPitch: 90,
+      minYaw: -90,
+      maxYaw: 160,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -8,
+        yaw: -1,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu3' }
+      }]
+    },
+
+    courseedu3: {
+      type: 'equirectangular',
+      panorama: 'courseedu3.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: 0,
+      yaw: -2,
+      hfov: 80,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -40,
+      maxPitch: 90,
+      minYaw: -150,
+      maxYaw: 160,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -14,
+        yaw: -1,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu4' }
+      }]
+    },
+
+    courseedu4: {
+      type: 'equirectangular',
+      panorama: 'courseedu4.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: 10,
+      yaw: 0,
+      hfov: 70,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: 0,
+      maxPitch: 00,
+      minYaw: -140,
+      maxYaw: 130,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -29,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu5' }
+      }]
+    },
+
+    courseedu5: {
+      type: 'equirectangular',
+      panorama: 'courseedu5.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -2,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -35,
+      maxPitch: 90,
+      minYaw: -160,
+      maxYaw: 130,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -10,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu6' }
+      }]
+    },
+
+    courseedu6: {
+      type: 'equirectangular',
+      panorama: 'courseedu6.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -35,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -10,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu7' }
+      }]
+    },
+
+    courseedu7: {
+      type: 'equirectangular',
+      panorama: 'courseedu7.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -13,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -60,
+      maxPitch: 90,
+      minYaw: -120,
+      maxYaw: 120,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -35,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu8' }
+      }]
+    },
+
+    courseedu8: {
+      type: 'equirectangular',
+      panorama: 'courseedu8.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -20,
+      yaw: -60,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -75,
+      maxPitch: 90,
+      minYaw: -100,
+      maxYaw: 120,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -50,
+        yaw: -60,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu9' }
+      }]
+    },
+
+    courseedu9: {
+      type: 'equirectangular',
+      panorama: 'courseedu9.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -50,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -26,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu10' }
+      }]
+    },
+
+    courseedu10: {
+      type: 'equirectangular',
+      panorama: 'courseedu10.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 5,
+      hfov: 60,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -38,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -15,
+        yaw: 5,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu11' }
+      }]
+    },
+
+    courseedu11: {
+      type: 'equirectangular',
+      panorama: 'courseedu11.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -37,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -13,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu12' }
+      }]
+    },
+
+    courseedu12: {
+      type: 'equirectangular',
+      panorama: 'courseedu12.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -35,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -10,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu13' }
+      }]
+    },
+
+    courseedu13: {
+      type: 'equirectangular',
+      panorama: 'courseedu13.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -35,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -10,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu14' }
+      }]
+    },
+
+    courseedu14: {
+      type: 'equirectangular',
+      panorama: 'courseedu14.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -35,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -10,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu15' }
+      }]
+    },
+
+    courseedu15: {
+      type: 'equirectangular',
+      panorama: 'courseedu15.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -35,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -10,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu16' }
+      }]
+    },
+
+    courseedu16: {
+      type: 'equirectangular',
+      panorama: 'courseedu16.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 80,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -35,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -10,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu17' }
+      }]
+    },
+
+    courseedu17: {
+      type: 'equirectangular',
+      panorama: 'courseedu17.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -3,
+      yaw: 0,
+      hfov: 45,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -35,
+      maxPitch: 90,
+      minYaw: -160,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -11,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu18' }
+      }]
+    },
+
+    courseedu18: {
+      type: 'equirectangular',
+      panorama: 'courseedu18.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: -5,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -35,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -10,
+        yaw: -5,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu19' }
+      }]
+    },
+
+    courseedu19: {
+      type: 'equirectangular',
+      panorama: 'courseedu19.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -18,
+      yaw: 6,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -55,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -30,
+        yaw: 7,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu20' }
+      }]
+    },
+
+    courseedu20: {
+      type: 'equirectangular',
+      panorama: 'courseedu20.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 20,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -35,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -10,
+        yaw: 20,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu21' }
+      }]
+    },
+
+    courseedu21: {
+      type: 'equirectangular',
+      panorama: 'courseedu21.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 80,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -35,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -10,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu22' }
+      }]
+    },
+
+    courseedu22: {
+      type: 'equirectangular',
+      panorama: 'courseedu22.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -35,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -10,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu23' }
+      }]
+    },
+
+    courseedu23: {
+      type: 'equirectangular',
+      panorama: 'courseedu23.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: -20,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -35,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -10,
+        yaw: -20,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu24' }
+      }]
+    },
+
+    courseedu24: {
+      type: 'equirectangular',
+      panorama: 'courseedu24.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 5,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -35,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -10,
+        yaw: 5,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu25' }
+      }]
+    },
+
+    courseedu25: {
+      type: 'equirectangular',
+      panorama: 'courseedu25.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -35,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -10,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu26' }
+      }]
+    },
+
+    courseedu26: {
+      type: 'equirectangular',
+      panorama: 'courseedu26.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -25,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: []
+    },
+
+    /* =========================
+       도로주행교양장
+    ========================= */
+
+    drivingedu1: {
+      type: 'equirectangular',
+      panorama: 'drivingedu1.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -10,
+      yaw: 5,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -17,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -5,
+        yaw: 10,
+        cssClass: 'custom-hotspot drivingedu-arrow',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'drivingedu2' }
+      }]
+    },
+
+    drivingedu2: {
+      type: 'equirectangular',
+      panorama: 'drivingedu2.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -25,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -10,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'drivingedu3' }
+      }]
+    },
+
+    drivingedu3: {
+      type: 'equirectangular',
+      panorama: 'drivingedu3.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -25,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -10,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'drivingedu4' }
+      }]
+    },
+
+    drivingedu4: {
+      type: 'equirectangular',
+      panorama: 'drivingedu4.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -25,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -10,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'drivingedu5' }
+      }]
+    },
+
+    drivingedu5: {
+      type: 'equirectangular',
+      panorama: 'drivingedu5.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -25,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -10,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'drivingedu6' }
+      }]
+    },
+
+    drivingedu6: {
+      type: 'equirectangular',
+      panorama: 'drivingedu6.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -25,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -10,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'drivingedu7' }
+      }]
+    },
+
+    drivingedu7: {
+      type: 'equirectangular',
+      panorama: 'drivingedu7.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -25,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -10,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'drivingedu8' }
+      }]
+    },
+
+    drivingedu8: {
+      type: 'equirectangular',
+      panorama: 'drivingedu8.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -40,
+      maxPitch: 80,
+      minYaw: -160,
+      maxYaw: 160,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -25,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'drivingedu9' }
+      }]
+    },
+
+    drivingedu9: {
+      type: 'equirectangular',
+      panorama: 'drivingedu9.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -40,
+      maxPitch: 80,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -25,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'drivingedu10' }
+      }]
+    },
+
+    drivingedu10: {
+      type: 'equirectangular',
+      panorama: 'drivingedu10.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -3,
+      yaw: 2,
+      hfov: 85,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -45,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: []
+    }
+
+  }
+});
+
+function hotspot(hotSpotDiv, args) {
+  hotSpotDiv.onclick = function() {
+    hideGuideToast();
+    sceneHistory.push(viewer.getScene());
+    viewer.loadScene(args.target);
+  };
+}
+
+function goBack() {
+  hideGuideToast();
+  if (sceneHistory.length > 0) {
+    var previousScene = sceneHistory.pop();
+    viewer.loadScene(previousScene);
+  }
+}
+
+function openRoute(sceneId) {
+  sceneHistory = [];
+
+  document.getElementById('menuScreen').style.display = 'none';
+  document.getElementById('viewerScreen').style.display = 'block';
+
+  showGuideToast();
+
+  setTimeout(function() {
+    viewer.resize();
+    viewer.loadScene(sceneId);
+  }, 100);
+}
+
+function goHome() {
+  hideGuideToast();
+  sceneHistory = [];
+
+  document.getElementById('viewerScreen').style.display = 'none';
+  document.getElementById('menuScreen').style.display = 'flex';
+}
+</script>
+
+</body>
+</html>
