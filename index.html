@@ -97,6 +97,13 @@
     .arrow-front {
       background-image: url('arrow-front.png?v=1001');
     }
+.arrow-right-inclined {
+  background-image: url('arrow-right-inclined.png?v=1001');
+}
+
+.arrow-left-inclined {
+  background-image: url('arrow-left-inclined.png?v=1001');
+}
 
     .online-arrow {
       background-image: url('online-arrow.png?v=1001');
@@ -405,7 +412,7 @@ viewer = pannellum.viewer('panorama', {
 
       // 위/아래/좌우 회전 제한
       minPitch: -40,
-      maxPitch: 90,
+      maxPitch: 85,
       minYaw: -160,
       maxYaw: 150,
 
@@ -1134,7 +1141,7 @@ viewer = pannellum.viewer('panorama', {
 
       // 화살표 위치 조정
       hotSpots: [{
-        pitch: -13,
+        pitch: -15,
         yaw: 0,
         cssClass: 'custom-hotspot arrow-front',
         createTooltipFunc: hotspot,
@@ -1163,7 +1170,7 @@ viewer = pannellum.viewer('panorama', {
 
       // 화살표 위치 조정
       hotSpots: [{
-        pitch: -15,
+        pitch: -17,
         yaw: 0,
         cssClass: 'custom-hotspot arrow-front',
         createTooltipFunc: hotspot,
@@ -1192,7 +1199,7 @@ viewer = pannellum.viewer('panorama', {
 
       // 화살표 위치 조정
       hotSpots: [{
-        pitch: -38,
+        pitch: -41,
         yaw: 0,
         cssClass: 'custom-hotspot arrow-front',
         createTooltipFunc: hotspot,
@@ -1482,7 +1489,7 @@ viewer = pannellum.viewer('panorama', {
 
       // 화살표 위치 조정
       hotSpots: [{
-        pitch: -14,
+        pitch: -15,
         yaw: 0,
         cssClass: 'custom-hotspot arrow-front',
         createTooltipFunc: hotspot,
@@ -1541,7 +1548,7 @@ viewer = pannellum.viewer('panorama', {
       // 화살표 위치 조정
       hotSpots: [{
         pitch: -33,
-        yaw: 7,
+        yaw: 6,
         cssClass: 'custom-hotspot arrow-front',
         createTooltipFunc: hotspot,
         createTooltipArgs: { target: 'courseedu20' }
@@ -1887,7 +1894,7 @@ viewer = pannellum.viewer('panorama', {
       // 화살표 위치 조정
       hotSpots: [{
         pitch: -10,
-        yaw: 2,
+        yaw: 4,
         cssClass: 'custom-hotspot arrow-front',
         createTooltipFunc: hotspot,
         createTooltipArgs: { target: 'drivingedu6' }
@@ -1916,7 +1923,7 @@ viewer = pannellum.viewer('panorama', {
       // 화살표 위치 조정
       hotSpots: [{
         pitch: -10,
-        yaw: 2,
+        yaw: 4,
         cssClass: 'custom-hotspot arrow-front',
         createTooltipFunc: hotspot,
         createTooltipArgs: { target: 'drivingedu7' }
