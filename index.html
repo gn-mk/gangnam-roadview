@@ -203,6 +203,30 @@
 .pnlm-author-box {
   display: none !important;
 }
+
+.location-box {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+
+  z-index: 9999;
+
+  background: rgba(30,30,30,0.9);
+  color: white;
+
+  padding: 14px 22px;
+
+  border-radius: 14px;
+
+  font-size: 18px;
+  font-weight: bold;
+
+text-align: center;
+line-height: 1.5;
+
+  display: none;
+}
+
   </style>
 </head>
 
@@ -228,6 +252,7 @@
 <div id="viewerScreen">
   <button class="home-btn" onclick="goHome()">홈</button>
   <button class="back-btn" onclick="goBack()">이전</button>
+<div id="locationBox" class="location-box"></div>
 <div id="guideToast" class="guide-toast">
   <div class="guide-title">
     화살표를 눌러 이동하세요
@@ -242,6 +267,17 @@
 </div>
 
 <script>
+function showLocation(text) {
+  const box = document.getElementById('locationBox');
+
+  if (!text) {
+    box.style.display = 'none';
+    return;
+  }
+
+  box.innerHTML = text;
+  box.style.display = 'block';
+}
 var sceneHistory = [];
 
 var viewer = null;
@@ -2106,6 +2142,26 @@ function goHome() {
   document.getElementById('viewerScreen').style.display = 'none';
   document.getElementById('menuScreen').style.display = 'flex';
 }
+
+viewer.on('scenechange', function(sceneId) {
+
+  if (sceneId === 'online6') {
+    showLocation('창구 위치 : 1층 12번 창구');
+  }
+
+  else if (sceneId === 'safety9') {
+    showLocation('창구 위치 : 2층 13번 창구');
+  }
+
+  else if (sceneId === 'booktest9') {
+    showLocation('창구 위치 : 2층 1번 창구');
+  }
+
+  else {
+    showLocation('');
+  }
+
+});
 </script>
 
 </body>
