@@ -4,6 +4,10 @@
   <meta charset="utf-8">
   <title>운전면허시험장 길찾기</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- 테스트 중 모바일 브라우저 캐시 방지 -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum/build/pannellum.css">
   <script src="https://cdn.jsdelivr.net/npm/pannellum/build/pannellum.js"></script>
@@ -84,6 +88,17 @@
   cursor: pointer;
 }
 
+/* online5~10: 장면 각도 / hfov / minPitch 보정과 무관하게
+   화살표를 화면의 동일한 터치 위치에 고정 */
+.screen-fixed-online-hotspot {
+  position: fixed !important;
+  left: 50% !important;
+  top: 75% !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+}
+
+
 /* 첫 화면 전용 큰 화살표 */
 .first-hotspot {
   width: 180px;
@@ -103,6 +118,14 @@
 
 .arrow-left-inclined {
   background-image: url('arrow-left-inclined.png?v=1001');
+}
+
+.arrow-right-inclined30 {
+  background-image: url('arrow-right-inclined30.png?v=1001');
+}
+
+.arrow-left90 {
+  background-image: url('arrow-left90.png?v=1001');
 }
 
     .online-arrow {
@@ -267,6 +290,7 @@ line-height: 1.5;
 </div>
 
 <script>
+// PITCH/YAW FORCE APPLY + CENTERED HOTSPOTS v20261001
 function showLocation(text) {
   const box = document.getElementById('locationBox');
 
@@ -324,7 +348,8 @@ function openRoute(sceneId) {
   setTimeout(function() {
     if (viewer) {
       viewer.resize();
-      viewer.loadScene(sceneId);
+      const startScene = viewer.getConfig().scenes[sceneId];
+      viewer.loadScene(sceneId, startScene.pitch, startScene.yaw, startScene.hfov);
     }
   }, 100);
 }
@@ -340,9 +365,12 @@ function goBack() {
   hideGuideToast();
   if (sceneHistory.length > 0 && viewer) {
     var previousScene = sceneHistory.pop();
-    viewer.loadScene(previousScene);
+    const previousConfig = viewer.getConfig().scenes[previousScene];
+    viewer.loadScene(previousScene, previousConfig.pitch, previousConfig.yaw, previousConfig.hfov);
   }
 }
+
+const cacheBust = Date.now();
 
 viewer = pannellum.viewer('panorama', {
   default: {
@@ -362,11 +390,11 @@ viewer = pannellum.viewer('panorama', {
 
     online1: {
       type: 'equirectangular',
-      panorama: 'online1.jpg',
+      panorama: 'online1.jpg?v=' + cacheBust,
 
       // 사진 시작 시점 조정
-      pitch: -8,
-      yaw: -3,
+      pitch: -15,
+      yaw: 0,
       hfov: 78,
 
       // 위/아래/좌우 회전 제한
@@ -381,8 +409,8 @@ viewer = pannellum.viewer('panorama', {
 
       // 화살표 위치 조정
       hotSpots: [{
-        pitch: -5,
-        yaw: 5,
+        pitch: -8,
+        yaw: 0,
         cssClass: 'first-hotspot online-arrow',
         createTooltipFunc: hotspot,
         createTooltipArgs: { target: 'online2' }
@@ -391,7 +419,7 @@ viewer = pannellum.viewer('panorama', {
 
     online2: {
       type: 'equirectangular',
-      panorama: 'online2.jpg',
+      panorama: 'online2.jpg?v=' + cacheBust,
 
       // 사진 시작 시점 조정
       pitch: -8,
@@ -420,15 +448,15 @@ viewer = pannellum.viewer('panorama', {
 
     online3: {
       type: 'equirectangular',
-      panorama: 'online3.jpg',
+      panorama: 'online3.jpg?v=' + cacheBust,
 
       // 사진 시작 시점 조정
-      pitch: -15,
+      pitch: -5,
       yaw: 10,
       hfov: 70,
 
       // 위/아래/좌우 회전 제한
-      minPitch: -40,
+      minPitch: -25,
       maxPitch: 90,
       minYaw: -180,
       maxYaw: 180,
@@ -439,7 +467,7 @@ viewer = pannellum.viewer('panorama', {
 
       // 화살표 위치 조정
       hotSpots: [{
-        pitch: -24,
+        pitch: -6,
         yaw: 10,
         cssClass: 'custom-hotspot arrow-right-inclined',
         createTooltipFunc: hotspot,
@@ -449,18 +477,18 @@ viewer = pannellum.viewer('panorama', {
 
     online4: {
       type: 'equirectangular',
-      panorama: 'online4.jpg',
+      panorama: 'online4.jpg?v=' + cacheBust,
 
       // 사진 시작 시점 조정
-      pitch: -8,
+      pitch: -5,
       yaw: 15,
       hfov: 75,
 
       // 위/아래/좌우 회전 제한
-      minPitch: -40,
-      maxPitch: 85,
-      minYaw: -160,
-      maxYaw: 150,
+      minPitch: -25,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
 
       // 확대/축소 제한
       minHfov: 60,
@@ -468,7 +496,7 @@ viewer = pannellum.viewer('panorama', {
 
       // 화살표 위치 조정
       hotSpots: [{
-      pitch: -23,
+      pitch: -6,
       yaw: 15,
         cssClass: 'custom-hotspot arrow-front',
         createTooltipFunc: hotspot,
@@ -478,28 +506,28 @@ viewer = pannellum.viewer('panorama', {
 
     online5: {
       type: 'equirectangular',
-      panorama: 'online5.jpg',
+      panorama: 'online5.jpg?v=' + cacheBust,
 
       // 사진 시작 시점 조정
-      pitch: -5,
-      yaw: 0,
+      pitch: -40,
+      yaw: 3,
       hfov: 55,
 
       // 위/아래/좌우 회전 제한
       minPitch: -40,
       maxPitch: 90,
-      minYaw: -160,
-      maxYaw: 160,
+      minYaw: -180,
+      maxYaw: 180,
 
       // 확대/축소 제한
-      minHfov: 60,
+      minHfov: 55,
       maxHfov: 90,
 
       // 화살표 위치 조정
       hotSpots: [{
-      pitch: -24,
+      pitch: -5,
       yaw: 0,
-        cssClass: 'custom-hotspot arrow-front',
+        cssClass: 'custom-hotspot arrow-front screen-fixed-online-hotspot',
         createTooltipFunc: hotspot,
         createTooltipArgs: { target: 'online6' }
       }]
@@ -507,16 +535,161 @@ viewer = pannellum.viewer('panorama', {
 
     online6: {
       type: 'equirectangular',
-      panorama: 'online6.jpg',
+      panorama: 'online6.jpg?v=' + cacheBust,
 
       // 사진 시작 시점 조정
-      pitch: -8,
+      pitch: -50,
       yaw: -3,
       hfov: 75,
 
       // 위/아래/좌우 회전 제한
+      minPitch: -50,
+      maxPitch: 90,
+      minYaw: -130,
+      maxYaw: 150,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -28,
+        yaw: -3,
+        cssClass: 'custom-hotspot arrow-front screen-fixed-online-hotspot',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'online7' }
+      }]
+    },
+
+    online7: {
+      type: 'equirectangular',
+      panorama: 'online7.jpg?v=' + cacheBust,
+
+      // 사진 시작 시점 조정
+      pitch: 0,
+      yaw: -4,
+      hfov: 60,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -45,
+      maxPitch: 90,
+      minYaw: -110,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -18,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-right-inclined30 screen-fixed-online-hotspot',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'online8' }
+      }]
+    },
+
+    online8: {
+      type: 'equirectangular',
+      panorama: 'online8.jpg?v=' + cacheBust,
+
+      // 사진 시작 시점 조정
+      pitch: -50,
+      yaw: -20,
+      hfov: 65,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -50,
+      maxPitch: 90,
+      minYaw: -140,
+      maxYaw: 140,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -18,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-right-inclined30 screen-fixed-online-hotspot',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'online9' }
+      }]
+    },
+
+    online9: {
+      type: 'equirectangular',
+      panorama: 'online9.jpg?v=' + cacheBust,
+
+      // 사진 시작 시점 조정
+      pitch: -40,
+      yaw: -14,
+      hfov: 55,
+
+      // 위/아래/좌우 회전 제한
       minPitch: -40,
-      maxPitch: 80,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 55,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -18,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front screen-fixed-online-hotspot',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'online10' }
+      }]
+    },
+
+    online10: {
+      type: 'equirectangular',
+      panorama: 'online10.jpg?v=' + cacheBust,
+
+      // 사진 시작 시점 조정
+      pitch: -50,
+      yaw: -20,
+      hfov: 80,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -50,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -18,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front screen-fixed-online-hotspot',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'online11' }
+      }]
+    },
+
+    online11: {
+      type: 'equirectangular',
+      panorama: 'online11.jpg?v=' + cacheBust,
+
+      // 사진 시작 시점 조정
+      pitch: -40,
+      yaw: 0,
+      hfov: 60,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -40,
+      maxPitch: 90,
       minYaw: -180,
       maxYaw: 180,
 
@@ -590,6 +763,7 @@ viewer = pannellum.viewer('panorama', {
       }]
     },
 
+
     safety3: {
       type: 'equirectangular',
       panorama: 'safety3.jpg',
@@ -648,7 +822,7 @@ viewer = pannellum.viewer('panorama', {
       }]
     },
 
-    safety5: {
+   safety5: {
       type: 'equirectangular',
       panorama: 'safety5.jpg',
 
@@ -664,7 +838,7 @@ viewer = pannellum.viewer('panorama', {
       maxYaw: 180,
 
       // 확대/축소 제한
-      minHfov: 60,
+      minHfov: 50,
       maxHfov: 90,
 
       // 화살표 위치 조정
@@ -1795,6 +1969,151 @@ viewer = pannellum.viewer('panorama', {
       maxHfov: 90,
 
       // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -8,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-right-inclined',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu27' }
+      }]
+    },
+
+    courseedu27: {
+      type: 'equirectangular',
+      panorama: 'courseedu27.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -35,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -18,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu28' }
+      }]
+    },
+
+    courseedu28: {
+      type: 'equirectangular',
+      panorama: 'courseedu28.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -35,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -18,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-left90',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu29' }
+      }]
+    },
+
+    courseedu29: {
+      type: 'equirectangular',
+      panorama: 'courseedu29.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -18,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -35,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -18,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-left90',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu30' }
+      }]
+    },
+
+    courseedu30: {
+      type: 'equirectangular',
+      panorama: 'courseedu30.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -35,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -18,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-front',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'courseedu31' }
+      }]
+    },
+
+    courseedu31: {
+      type: 'equirectangular',
+      panorama: 'courseedu31.jpg',
+
+      // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -35,
+      maxPitch: 90,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
       hotSpots: []
     },
 
@@ -2068,6 +2387,35 @@ viewer = pannellum.viewer('panorama', {
       panorama: 'drivingedu10.jpg',
 
       // 사진 시작 시점 조정
+      pitch: -8,
+      yaw: 0,
+      hfov: 75,
+
+      // 위/아래/좌우 회전 제한
+      minPitch: -40,
+      maxPitch: 80,
+      minYaw: -180,
+      maxYaw: 180,
+
+      // 확대/축소 제한
+      minHfov: 60,
+      maxHfov: 90,
+
+      // 화살표 위치 조정
+      hotSpots: [{
+        pitch: -25,
+        yaw: 0,
+        cssClass: 'custom-hotspot arrow-right-inclined30',
+        createTooltipFunc: hotspot,
+        createTooltipArgs: { target: 'drivingedu11' }
+      }]
+    },
+
+    drivingedu11: {
+      type: 'equirectangular',
+      panorama: 'drivingedu11.jpg',
+
+      // 사진 시작 시점 조정
       pitch: -3,
       yaw: 2,
       hfov: 85,
@@ -2075,8 +2423,8 @@ viewer = pannellum.viewer('panorama', {
       // 위/아래/좌우 회전 제한
       minPitch: -45,
       maxPitch: 90,
-      minYaw: -160,
-      maxYaw: 160,
+      minYaw: -180,
+      maxYaw: 180,
 
       // 확대/축소 제한
       minHfov: 60,
@@ -2109,7 +2457,8 @@ function hotspot(hotSpotDiv, args) {
 
     sceneHistory.push(viewer.getScene());
 
-    viewer.loadScene(args.target);
+    const targetScene = viewer.getConfig().scenes[args.target];
+    viewer.loadScene(args.target, targetScene.pitch, targetScene.yaw, targetScene.hfov);
   };
 }
 
@@ -2117,7 +2466,8 @@ function goBack() {
   hideGuideToast();
   if (sceneHistory.length > 0) {
     var previousScene = sceneHistory.pop();
-    viewer.loadScene(previousScene);
+    const previousConfig = viewer.getConfig().scenes[previousScene];
+    viewer.loadScene(previousScene, previousConfig.pitch, previousConfig.yaw, previousConfig.hfov);
   }
 }
 
@@ -2131,7 +2481,8 @@ function openRoute(sceneId) {
 
   setTimeout(function() {
     viewer.resize();
-    viewer.loadScene(sceneId);
+    const startScene = viewer.getConfig().scenes[sceneId];
+    viewer.loadScene(sceneId, startScene.pitch, startScene.yaw, startScene.hfov);
   }, 100);
 }
 
@@ -2145,7 +2496,7 @@ function goHome() {
 
 viewer.on('scenechange', function(sceneId) {
 
-  if (sceneId === 'online6') {
+  if (sceneId === 'online11') {
     showLocation('창구 위치 : 1층 12번 창구');
   }
 
